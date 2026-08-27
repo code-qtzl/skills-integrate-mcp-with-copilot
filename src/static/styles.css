@@ -28,6 +28,19 @@ header h1 {
   margin-bottom: 10px;
 }
 
+.admin-controls {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.admin-controls button {
+  font-size: 14px;
+  padding: 7px 12px;
+}
+
 main {
   display: flex;
   flex-wrap: wrap;
