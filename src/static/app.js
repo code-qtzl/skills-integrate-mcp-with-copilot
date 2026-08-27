@@ -3,6 +3,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const loginButton = document.getElementById("login-button");
+  const authStatus = document.getElementById("auth-status");
+  let authHeader = sessionStorage.getItem("teacherAuth");
+
+  function updateAuthControls() {
+    const isTeacher = Boolean(authHeader);
+    authStatus.textContent = isTeacher ? "Teacher mode" : "Student view";
+    loginButton.textContent = isTeacher ? "Log out" : "Teacher login";
+  }
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -30,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span>${authHeader ? `<button class="delete-btn" data-activity="${name}" data-email="${email}">Remove</button>` : ""}</li>`
                   )
                   .join("")}
               </ul>
@@ -80,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
+          headers: authHeader ? { Authorization: authHeader } : {},
         }
       );
 
@@ -124,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/signup?email=${encodeURIComponent(email)}`,
         {
           method: "POST",
+          headers: authHeader ? { Authorization: authHeader } : {},
         }
       );
 
@@ -155,6 +166,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  loginButton.addEventListener("click", async () => {
+    if (authHeader) {
+      authHeader = null;
+      sessionStorage.removeItem("teacherAuth");
+      updateAuthControls();
+      fetchActivities();
+      return;
+    }
+
+    const username = window.prompt("Teacher username:");
+    const password = username ? window.prompt("Teacher password:") : null;
+    if (!username || !password) return;
+
+    const candidate = `Basic ${btoa(`${username}:${password}`)}`;
+    const response = await fetch("/auth/check", {
+      headers: { Authorization: candidate },
+    });
+    if (response.ok) {
+      authHeader = candidate;
+      sessionStorage.setItem("teacherAuth", authHeader);
+      updateAuthControls();
+      fetchActivities();
+    } else {
+      messageDiv.textContent = "Teacher login failed.";
+      messageDiv.className = "error";
+      messageDiv.classList.remove("hidden");
+    }
+  });
+
   // Initialize app
+  updateAuthControls();
   fetchActivities();
 });
